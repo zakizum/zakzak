@@ -1,0 +1,197 @@
+
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <limits>
+#include <sstream>
+#include <iomanip>
+
+using namespace std;
+
+// Структура для представления точки
+struct Point {
+    double x;
+    double y;
+};
+
+// Функция для вычисления квадрата расстояния между двумя точками
+double distSq(const Point& p1, const Point& p2) {
+    return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
+}
+
+// Функция для проверки, образуют ли три точки прямоугольный треугольник
+bool isRightTriangle(const Point& p1, const Point& p2, const Point& p3) {
+    double aSq = distSq(p1, p2);
+    double bSq = distSq(p2, p3);
+    double cSq = distSq(p1, p3);
+
+    // Проверка условия прямоугольности (теорема Пифагора)
+    return (abs(aSq + bSq - cSq) < numeric_limits<double>::epsilon() * max({ aSq, bSq, cSq })
+        || abs(aSq + cSq - bSq) < numeric_limits<double>::epsilon() * max({ aSq, bSq, cSq })
+        || abs(bSq + cSq - aSq) < numeric_limits<double>::epsilon() * max({ aSq, bSq, cSq }));
+}
+
+// Функция для проверки, лежит ли точка внутри треугольника
+bool isInsideTriangle(const Point& p, const Point& a, const Point& b, const Point& c) {
+    double area = 0.5 * abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
+    double area1 = 0.5 * abs((a.x - p.x) * (b.y - p.y) - (b.x - p.x) * (a.y - p.y));
+    double area2 = 0.5 * abs((b.x - p.x) * (c.y - p.y) - (c.x - p.x) * (b.y - p.y));
+    double area3 = 0.5 * abs((c.x - p.x) * (a.y - p.y) - (a.x - p.x) * (c.y - p.y));
+
+    return abs(area - (area1 + area2 + area3)) < numeric_limits<double>::epsilon() * area;
+}
+
+// Функция для подсчета точек внутри треугольника
+int countPointsInside(Point* points, int numPoints, const Point& a, const Point& b, const Point& c) {
+    int count = 0;
+    for (int i = 0; i < numPoints; ++i) {
+        if (points[i].x == a.x && points[i].y == a.y || points[i].x == b.x && points[i].y == b.y || points[i].x == c.x && points[i].y == c.y) {
+            continue;
+        }
+        if (isInsideTriangle(points[i], a, b, c)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Функция для считывания точек из файла построчно
+bool readPointsFromFile(const string& filename, Point** points, int& numPoints) {
+    ifstream inf(filename);
+    if (!inf.is_open()) {
+        cerr << "Ошибка открытия файла: " << filename << endl;
+        return false;
+    }
+
+    numPoints = 0;
+    *points = nullptr;
+    string line;
+    int capacity = 10;  // Начальная вместимость массива
+    *points = new Point[capacity];
+
+    while (getline(inf, line))
+    {
+        stringstream ss(line);
+        Point p;
+        if (ss >> p.x >> p.y) {
+            if (numPoints >= capacity)
+            {
+                capacity *= 2;
+                Point* newPoints = new Point[capacity];
+                for (int i = 0; i < numPoints; ++i)
+                {
+                    newPoints[i] = (*points)[i];
+                }
+                delete[] * points;
+                *points = newPoints;
+            }
+            (*points)[numPoints++] = p;
+        }
+    }
+    if (inf.peek() != EOF)
+    {
+        cerr << "Ошибка: Обнаружены лишние данные в файле." << endl;
+        if (*points) delete[] * points;
+        return false;
+    }
+
+
+    inf.close();
+    return true;
+}
+
+
+// Функция для вывода результатов в файл и консоль
+void printResults(Point* points, int numPoints, Point bestA, Point bestB, Point bestC, int maxPoints, bool found) {
+    ofstream ouf("C:\\Work\\out.txt");
+    if (!ouf.is_open()) {
+        cerr << "Ошибка: Не удалось открыть файл вывода 'C:\\Work\\out.txt'." << endl;
+        return;
+    }
+
+    if (numPoints < 3)
+    {
+        cout << "Недостаточно точек для формирования треугольника." << endl;
+        ouf << "Недостаточно точек для формирования треугольника." << endl;
+        ouf.close();
+        return;
+    }
+
+    if (found)
+    {
+        cout << "Прямоугольные треугольники:\n";
+        ouf << "Прямоугольные треугольники:\n";
+        for (int i = 0; i < numPoints; ++i) {
+            for (int j = i + 1; j < numPoints; ++j) {
+                for (int k = j + 1; k < numPoints; ++k) {
+                    if (isRightTriangle(points[i], points[j], points[k])) {
+                        int insideCount = countPointsInside(points, numPoints, points[i], points[j], points[k]);
+                        cout << "Вершина 1: (" << points[i].x << ", " << points[i].y << "), "
+                            << "Вершина 2: (" << points[j].x << ", " << points[j].y << "), "
+                            << "Вершина 3: (" << points[k].x << ", " << points[k].y << "), "
+                            << "Точек внутри: " << insideCount << "\n";
+
+                        ouf << "Вершина 1: (" << points[i].x << ", " << points[i].y << "), "
+                            << "Вершина 2: (" << points[j].x << ", " << points[j].y << "), "
+                            << "Вершина 3: (" << points[k].x << ", " << points[k].y << "), "
+                            << "Точек внутри: " << insideCount << "\n";
+                    }
+                }
+            }
+        }
+
+        cout << "\nНайден прямоугольный треугольник с максимальным количеством точек внутри (" << maxPoints << "):\n";
+        cout << "Вершина 1: (" << bestA.x << ", " << bestA.y << ")\n";
+        cout << "Вершина 2: (" << bestB.x << ", " << bestB.y << ")\n";
+        cout << "Вершина 3: (" << bestC.x << ", " << bestC.y << ")\n";
+
+        ouf << "\nНайден прямоугольный треугольник с максимальным количеством точек внутри (" << maxPoints << "):\n";
+        ouf << "Вершина 1: (" << bestA.x << ", " << bestA.y << ")\n";
+        ouf << "Вершина 2: (" << bestB.x << ", " << bestB.y << ")\n";
+        ouf << "Вершина 3: (" << bestC.x << ", " << bestC.y << ")\n";
+
+    }
+    else {
+        cout << "Не найдено ни одного прямоугольного треугольника." << endl;
+        ouf << "Не найдено ни одного прямоугольного треугольника." << endl;
+    }
+
+    ouf.close();
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    Point* points = nullptr;
+    int numPoints = 0;
+
+    if (!readPointsFromFile("C:\\Work\\points.txt", &points, numPoints)) {
+        if (points) delete[] points;
+        return 1;
+    }
+
+    int maxPoints = 0;
+    Point bestA, bestB, bestC;
+    bool found = false;
+
+    for (int i = 0; i < numPoints; ++i) {
+        for (int j = i + 1; j < numPoints; ++j) {
+            for (int k = j + 1; k < numPoints; ++k) {
+                if (isRightTriangle(points[i], points[j], points[k])) {
+                    found = true;
+                    int insideCount = countPointsInside(points, numPoints, points[i], points[j], points[k]);
+                    if (insideCount > maxPoints) {
+                        maxPoints = insideCount;
+                        bestA = points[i];
+                        bestB = points[j];
+                        bestC = points[k];
+                    }
+                }
+            }
+        }
+    }
+
+    printResults(points, numPoints, bestA, bestB, bestC, maxPoints, found);
+    if (points) delete[] points;
+
+    return 0;
+}
