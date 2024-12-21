@@ -1,0 +1,168 @@
+#include <iostream>
+FHHVBNHАААААААААААААА
+using namespace std;
+
+// Функция для вычисления суммы элементов матрицы размера 3x3
+double calcsum3(double** A, int n) {
+    int mid = n / 2;
+    return A[mid][mid];
+}
+
+// Функция для вычисления суммы всех элементов матрицы
+double calcsum(double** A, int n) {
+    double sum = 0;
+    if (n <= 0) return 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            sum += A[i][j];
+        }
+    }
+    return sum;
+}
+
+// Функция для вычисления суммы элементов заштрихованной области в четной матрице
+double CHetsum(double** A, int n) {
+    double sum = 0;
+    int mid1 = n / 2 - 1;
+    int mid2 = n / 2;
+    for (int i = 1; i < n - 1; i++) {
+        sum += A[i][mid1];
+        sum += A[mid1][i];
+        sum += A[i][mid2];
+        sum += A[mid2][i];
+    }
+    sum -= A[mid1][mid1];
+    sum -= A[mid1][mid2];
+    sum -= A[mid2][mid1];
+    sum -= A[mid2][mid2];
+    return sum;
+}
+
+// Функция для вычисления суммы элементов заштрихованной области в нечетной матрице
+double neCHetsum(double** A, int n) {
+    double sum = 0;
+    int mid = n / 2;
+    for (int i = 1; i < n - 1; i++) {
+        sum += A[i][mid];
+        sum += A[mid][i];
+    }
+    sum -= A[mid][mid];
+    return sum;
+}
+
+// Функция для проверки наличия нуля в матрице
+bool rezarr(double** A, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (A[i][j] == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+// Функция для чтения матрицы из файла
+bool readArray(const string& filename, double*** A, int& n) {
+    ifstream inf(filename);
+    if (inf.fail()) {
+        cerr << "Ошибка открытия файла: " << filename << endl;
+        return false;
+    }
+
+    if (!(inf >> n) || n <= 0) {
+        cerr << "Ошибка: некорректное значение n в файле.\n";
+        inf.close();
+        return false;
+    }
+
+    *A = new double* [n];
+    for (int i = 0; i < n; ++i) {
+        (*A)[i] = new double[n];
+        for (int j = 0; j < n; ++j) {
+            (*A)[i][j] = 0.0;
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (!(inf >> (*A)[i][j])) {
+               
+                break;
+            }
+           
+        }
+        string line;
+        getline(inf, line);
+    }
+  //  while (rezarr(*A, n)) { n -= 1; }
+    inf.close();
+    return true;
+}
+
+// Функция для вывода матрицы и суммы элементов заштрихованной области
+void printArray(double** A, int n, double sum) {
+    ofstream ouf("C:\\Work\\out.txt");
+    cout << "Массив A:\n";
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cout << setw(5) << A[i][j];
+            ouf << setw(5) << A[i][j];
+        }
+        cout << endl;
+        ouf << endl;
+    }
+    cout << "\nСумма элементов заштрихованной области: " << sum << endl;
+    ouf << "\nСумма элементов заштрихованной области: " << sum << endl;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    int n;
+    double** A = nullptr;
+
+    if (!readArray("C:\\Work\\5in.txt", &A, n)) {
+        return 1;
+    }
+
+    double sum;
+    cout << n;
+
+    if (A != nullptr) {
+        if (n < 4) {
+            switch (n) {
+            case 1:
+                sum = A[0][0];
+                break;
+            case 2:
+                sum = calcsum(A, n);
+                break;
+            case 3:
+                sum = calcsum3(A, n);
+                sum = calcsum(A, n) - sum;
+                break;
+            default:
+                sum = 0;
+                break;
+            }
+        }
+        else {
+            if (n % 2 != 0) {
+                sum = neCHetsum(A, n);
+            }
+            else {
+                sum = CHetsum(A, n);
+            }
+            sum = calcsum(A, n) - sum;
+        }
+        printArray(A, n, sum);
+    }
+
+    if (A != nullptr) {
+        for (int i = 0; i < n; ++i) {
+            delete[] A[i];
+        }
+        delete[] A;
+    }
+
+    return 0;
+}
