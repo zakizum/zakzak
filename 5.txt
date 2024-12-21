@@ -1,11 +1,4 @@
-#include <iostream>
-FHHVBNHАААААААААААААА
-using namespace std;
-
-// Функция для вычисления суммы элементов матрицы размера 3x3
-double calcsum3(double** A, int n) {
-    int mid = n / 2;
-    return A[mid][mid];
+арр
 }
 
 // Функция для вычисления суммы всех элементов матрицы
